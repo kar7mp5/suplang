@@ -1,3 +1,6 @@
+# C/CPP build folder
+build/
+
 # Prerequisites
 *.d
 

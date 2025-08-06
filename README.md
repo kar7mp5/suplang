@@ -1,5 +1,14 @@
 # SupLang
 
+## Getting Started
+
+```bash
+cd build
+cmake ..
+make .
+./sublang
+```
+
 ## To Learn
 
 lexer
