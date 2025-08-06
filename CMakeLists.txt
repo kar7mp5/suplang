@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.10)
-project(MyProject)
+project(SupLang)
 
 set(SOURCES
     src/main.cpp
-    src/Math/Math.cpp
+    src/lexer/lexer.cpp
 )
 
 add_executable(suplang ${SOURCES})
