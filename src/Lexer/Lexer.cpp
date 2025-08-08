@@ -1,8 +1,7 @@
-#include "lexer/lexer.h"
+#include "Lexer/Lexer.h"
 #include <cctype>
 #include <map>
 
-// 문자열을 TokenType으로 매핑하기 위한 맵
 std::map<std::string, TokenType> keywords = {
     {"def", TokenType::DEF}, {"class", TokenType::CLASS},
     {"struct", TokenType::STRUCT}, {"if", TokenType::IF},
@@ -18,7 +17,7 @@ Lexer::Lexer(const std::string& source) : source(source) {
     if (!source.empty()) {
         currentChar = source[position];
     } else {
-        currentChar = '\0'; // NUL 문자 (파일 끝 의미)
+        currentChar = '\0';
     }
 }
 
@@ -75,31 +74,18 @@ Token Lexer::nextToken() {
         }
 
         switch (currentChar) {
-            case '=':
-                advance();
-                return {TokenType::ASSIGN, "="};
-            case ';':
-                advance();
-                return {TokenType::SEMICOLON, ";"};
-            case '(':
-                advance();
-                return {TokenType::LPAREN, "("};
-            case ')':
-                advance();
-                return {TokenType::RPAREN, ")"};
-            case '{':
-                advance();
-                return {TokenType::LBRACE, "{"};
-            case '}':
-                advance();
-                return {TokenType::RBRACE, "}"};
-            case '+':
-                advance();
-                return {TokenType::PLUS, "+"};
-            // ... 다른 연산자 및 구분자 추가 ...
+            case '=': advance(); return {TokenType::ASSIGN, "="};
+            case ';': advance(); return {TokenType::SEMICOLON, ";"};
+            case '(': advance(); return {TokenType::LPAREN, "("};
+            case ')': advance(); return {TokenType::RPAREN, ")"};
+            case '{': advance(); return {TokenType::LBRACE, "{"};
+            case '}': advance(); return {TokenType::RBRACE, "}"};
+            case '+': advance(); return {TokenType::PLUS, "+"};
+            case '-': advance(); return {TokenType::MINUS, "-"};
+            case '*': advance(); return {TokenType::ASTERISK, "*"};
+            case '/': advance(); return {TokenType::SLASH, "/"};
         }
         
-        // 알 수 없는 문자는 ILLEGAL 토큰으로 처리
         Token illegalToken = {TokenType::ILLEGAL, std::string(1, currentChar)};
         advance();
         return illegalToken;

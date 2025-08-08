@@ -1,4 +1,4 @@
-#pragma once // 인클루드 가드 (C++11 이상)
+#pragma once
 #include <string>
 #include <vector>
 
@@ -33,5 +33,5 @@ enum class TokenType {
 // 토큰 구조체
 struct Token {
     TokenType type;
-    std::string value; // 토큰의 실제 문자열 값 (예: "my_var", "123")
+    std::string value;
 };

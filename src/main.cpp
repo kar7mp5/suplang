@@ -1,34 +1,40 @@
 #include <iostream>
-#include "lexer/lexer.h"
+#include "Lexer/Lexer.h"
+#include "Parser/Parser.h"
 
-// TokenType을 문자열로 변환해주는 도우미 함수 (출력용)
-std::string tokenTypeToString(TokenType type) {
-    switch (type) {
-        case TokenType::DEF: return "DEF";
-        case TokenType::IDENTIFIER: return "IDENTIFIER";
-        case TokenType::INT32: return "INT32";
-        case TokenType::ASSIGN: return "ASSIGN";
-        case TokenType::INTEGER_LITERAL: return "INTEGER_LITERAL";
-        case TokenType::SEMICOLON: return "SEMICOLON";
-        case TokenType::LPAREN: return "LPAREN";
-        case TokenType::RPAREN: return "RPAREN";
-        case TokenType::LBRACE: return "LBRACE";
-        case TokenType::RBRACE: return "RBRACE";
-        case TokenType::END_OF_FILE: return "EOF";
-        default: return "UNKNOWN";
+// AST를 출력하여 구조를 확인하는 함수
+void printAST(ASTNode* node, int indent = 0) {
+    if (!node) return;
+
+    for (int i = 0; i < indent; ++i) std::cout << "  ";
+
+    if (auto p = dynamic_cast<ProgramNode*>(node)) {
+        std::cout << "[Program]\n";
+        for (const auto& stmt : p->statements) {
+            printAST(stmt.get(), indent + 1);
+        }
+    } else if (auto vd = dynamic_cast<VarDeclNode*>(node)) {
+        std::cout << "[VarDecl] Type: " << vd->varType << ", Name: " << vd->varName << "\n";
+        for (int i = 0; i < indent + 1; ++i) std::cout << "  ";
+        std::cout << "Value: \n";
+        printAST(vd->initialValue.get(), indent + 2);
+    } else if (auto nl = dynamic_cast<NumberLiteralNode*>(node)) {
+        std::cout << "[Number] " << nl->value << "\n";
     }
 }
 
-int main() {
-    std::string code = "int32 x = 5; def myFunction() {}";
-    Lexer lexer(code);
 
-    Token token;
-    do {
-        token = lexer.nextToken();
-        std::cout << "Type: " << tokenTypeToString(token.type)
-                  << ", Value: '" << token.value << "'" << std::endl;
-    } while (token.type != TokenType::END_OF_FILE);
+int main() {
+    std::string code = "int32 x = 100;";
+    
+    Lexer lexer(code);
+    Parser parser(lexer);
+
+    auto ast = parser.parseProgram();
+
+    std::cout << "--- Abstract Syntax Tree ---\n";
+    printAST(ast.get());
+    std::cout << "--------------------------\n";
 
     return 0;
 }
