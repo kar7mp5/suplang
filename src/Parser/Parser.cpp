@@ -2,6 +2,19 @@
 #include <iostream>
 
 Parser::Parser(Lexer& lexer) : lexer(lexer) {
+    // Setup operator precedences
+    precedences = {
+        {TokenType::EQUALS, Precedence::EQUALS},
+        {TokenType::NOT_EQUALS, Precedence::EQUALS},
+        {TokenType::LT, Precedence::LESSGREATER},
+        {TokenType::GT, Precedence::LESSGREATER},
+        {TokenType::PLUS, Precedence::SUM},
+        {TokenType::MINUS, Precedence::SUM},
+        {TokenType::SLASH, Precedence::PRODUCT},
+        {TokenType::ASTERISK, Precedence::PRODUCT},
+    };
+    
+    // Initialize currentToken and peekToken
     nextToken();
     nextToken();
 }
@@ -53,9 +66,9 @@ std::unique_ptr<StatementNode> Parser::parseVarDeclStatement() {
 
     if (!expectPeek(TokenType::ASSIGN)) return nullptr;
     
-    nextToken();
+    nextToken(); // Move past '=' to the expression
 
-    auto value = parseExpression();
+    auto value = parseExpression(Precedence::LOWEST);
 
     if (peekToken.type == TokenType::SEMICOLON) {
         nextToken();
@@ -64,14 +77,52 @@ std::unique_ptr<StatementNode> Parser::parseVarDeclStatement() {
     return std::make_unique<VarDeclNode>(type, name, std::move(value));
 }
 
-std::unique_ptr<ExpressionNode> Parser::parseExpression() {
-    if (currentToken.type == TokenType::INTEGER_LITERAL) {
-        return parseIntegerLiteral();
+std::unique_ptr<ExpressionNode> Parser::parseExpression(Precedence precedence) {
+    // Prefix parsing
+    std::unique_ptr<ExpressionNode> leftExp;
+    switch (currentToken.type) {
+        case TokenType::IDENTIFIER:
+            leftExp = parseIdentifier();
+            break;
+        case TokenType::INTEGER_LITERAL:
+            leftExp = parseIntegerLiteral();
+            break;
+        case TokenType::MINUS:
+             leftExp = parsePrefixExpression();
+             break;
+        default:
+            return nullptr;
     }
-    return nullptr;
+
+    // Infix parsing
+    while (peekToken.type != TokenType::SEMICOLON && precedence < (precedences.count(peekToken.type) ? precedences[peekToken.type] : Precedence::LOWEST)) {
+        nextToken();
+        leftExp = parseInfixExpression(std::move(leftExp));
+    }
+
+    return leftExp;
+}
+
+std::unique_ptr<ExpressionNode> Parser::parseIdentifier() {
+    return std::make_unique<IdentifierNode>(currentToken.value);
 }
 
 std::unique_ptr<ExpressionNode> Parser::parseIntegerLiteral() {
     int32_t value = std::stoi(currentToken.value);
     return std::make_unique<NumberLiteralNode>(value);
+}
+
+std::unique_ptr<ExpressionNode> Parser::parsePrefixExpression() {
+    std::string op = currentToken.value;
+    nextToken();
+    auto right = parseExpression(Precedence::PREFIX);
+    return std::make_unique<PrefixExpressionNode>(op, std::move(right));
+}
+
+std::unique_ptr<ExpressionNode> Parser::parseInfixExpression(std::unique_ptr<ExpressionNode> left) {
+    std::string op = currentToken.value;
+    Precedence currentPrecedence = precedences[currentToken.type];
+    nextToken();
+    auto right = parseExpression(currentPrecedence);
+    return std::make_unique<InfixExpressionNode>(std::move(left), op, std::move(right));
 }

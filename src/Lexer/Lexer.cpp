@@ -2,6 +2,7 @@
 #include <cctype>
 #include <map>
 
+// Map of keywords to their corresponding token types
 std::map<std::string, TokenType> keywords = {
     {"def", TokenType::DEF}, {"class", TokenType::CLASS},
     {"struct", TokenType::STRUCT}, {"if", TokenType::IF},
@@ -17,7 +18,7 @@ Lexer::Lexer(const std::string& source) : source(source) {
     if (!source.empty()) {
         currentChar = source[position];
     } else {
-        currentChar = '\0';
+        currentChar = '\0'; // NUL character signifies end of file
     }
 }
 
@@ -38,12 +39,12 @@ void Lexer::skipWhitespace() {
 
 Token Lexer::makeIdentifier() {
     std::string ident = "";
-    size_t startPos = position;
     while (currentChar != '\0' && (isalnum(currentChar) || currentChar == '_')) {
         ident += currentChar;
         advance();
     }
 
+    // Check if the identifier is a keyword
     if (keywords.count(ident)) {
         return {keywords[ident], ident};
     }
@@ -52,7 +53,6 @@ Token Lexer::makeIdentifier() {
 
 Token Lexer::makeNumber() {
     std::string num = "";
-    size_t startPos = position;
     while (currentChar != '\0' && isdigit(currentChar)) {
         num += currentChar;
         advance();
@@ -86,6 +86,7 @@ Token Lexer::nextToken() {
             case '/': advance(); return {TokenType::SLASH, "/"};
         }
         
+        // If the character is unknown, return an ILLEGAL token
         Token illegalToken = {TokenType::ILLEGAL, std::string(1, currentChar)};
         advance();
         return illegalToken;
