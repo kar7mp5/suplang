@@ -5,8 +5,22 @@
 // Enum class representing all possible token types
 enum class TokenType {
     // Keywords
-    DEF, CLASS, STRUCT, IF, ELSE, WHILE, FOR, RETURN,
-    INT32, FLOAT, BOOL, CHAR, LIST, TRUE, FALSE,
+    DEF,
+    CLASS,
+    STRUCT,
+    RETURN,
+    INT32,
+    FLOAT,
+    BOOL,
+    CHAR,
+    LIST,
+
+    // New keywords for control flow and boolean values
+    IF,
+    ELIF,
+    ELSE,
+    TRUE,
+    FALSE,
 
     // Identifiers and Literals
     IDENTIFIER,
@@ -14,24 +28,40 @@ enum class TokenType {
     STRING_LITERAL,
 
     // Operators
-    PLUS, MINUS, ASTERISK, SLASH, PERCENT,
-    ASSIGN, EQUALS, NOT_EQUALS,
-    LT, GT, LTE, GTE,
-    INCREMENT, DECREMENT,
+    PLUS,
+    MINUS,
+    ASTERISK,
+    SLASH,
+    PERCENT,
+    ASSIGN,
+    INCREMENT,
+    DECREMENT,
+
+    // New comparison operators
+    EQUALS,
+    NOT_EQUALS, // ==, !=
+    LT,
+    GT, // <, >
 
     // Delimiters
-    LPAREN, RPAREN, // ( )
-    LBRACE, RBRACE, // { }
-    LBRACKET, RBRACKET, // [ ]
-    SEMICOLON, COLON, DOT, COMMA,
+    LPAREN,
+    RPAREN, // ( )
+    LBRACE,
+    RBRACE, // { }
+    LBRACKET,
+    RBRACKET, // [ ]
+    SEMICOLON,
+    COLON,
+    DOT,
+    COMMA,
 
     // Other
-    ILLEGAL,     // Represents an unknown token
+    ILLEGAL, // Represents an unknown token
     END_OF_FILE
 };
 
 // Represents a single token with its type and string value
 struct Token {
     TokenType type;
-    std::string value; // The actual string slice from the source code
+    std::string value;
 };

@@ -1,95 +1,146 @@
 #include "Lexer/Lexer.h"
+
 #include <cctype>
 #include <map>
 
-// Map of keywords to their corresponding token types
-std::map<std::string, TokenType> keywords = {
-    {"def", TokenType::DEF}, {"class", TokenType::CLASS},
-    {"struct", TokenType::STRUCT}, {"if", TokenType::IF},
-    {"else", TokenType::ELSE}, {"while", TokenType::WHILE},
-    {"for", TokenType::FOR}, {"return", TokenType::RETURN},
-    {"int32", TokenType::INT32}, {"float", TokenType::FLOAT},
-    {"bool", TokenType::BOOL}, {"char", TokenType::CHAR},
-    {"list", TokenType::LIST}, {"true", TokenType::TRUE},
-    {"false", TokenType::FALSE}
+namespace suplang {
+
+namespace {
+
+// Map of keywords to their corresponding token types for quick lookup.
+const std::map<std::string, TokenType> kKeywords = {
+    {"def", TokenType::DEF},       {"class", TokenType::CLASS}, {"struct", TokenType::STRUCT},
+    {"return", TokenType::RETURN}, {"int32", TokenType::INT32}, {"float", TokenType::FLOAT},
+    {"bool", TokenType::BOOL},     {"char", TokenType::CHAR},   {"list", TokenType::LIST},
+    {"if", TokenType::IF},         {"elif", TokenType::ELIF},   {"else", TokenType::ELSE},
+    {"true", TokenType::TRUE},     {"false", TokenType::FALSE},
 };
 
-Lexer::Lexer(const std::string& source) : source(source) {
-    if (!source.empty()) {
-        currentChar = source[position];
+} // namespace
+
+Lexer::Lexer(const std::string &source) : source_(source) {
+    if (!source_.empty()) {
+        current_char_ = source_[position_];
     } else {
-        currentChar = '\0'; // NUL character signifies end of file
+        current_char_ = 0; // NUL character signifies end of input.
     }
 }
 
 void Lexer::advance() {
-    position++;
-    if (position >= source.length()) {
-        currentChar = '\0';
+    position_++;
+    if (position_ >= source_.length()) {
+        current_char_ = 0;
     } else {
-        currentChar = source[position];
+        current_char_ = source_[position_];
     }
 }
 
+char Lexer::peekChar() {
+    if (position_ + 1 >= source_.length()) {
+        return 0;
+    }
+    return source_[position_ + 1];
+}
+
 void Lexer::skipWhitespace() {
-    while (currentChar != '\0' && isspace(currentChar)) {
+    while (current_char_ != 0 && isspace(current_char_)) {
         advance();
     }
 }
 
 Token Lexer::makeIdentifier() {
-    std::string ident = "";
-    while (currentChar != '\0' && (isalnum(currentChar) || currentChar == '_')) {
-        ident += currentChar;
+    std::string ident;
+    while (current_char_ != 0 && (isalnum(current_char_) || current_char_ == '_')) {
+        ident += current_char_;
         advance();
     }
 
-    // Check if the identifier is a keyword
-    if (keywords.count(ident)) {
-        return {keywords[ident], ident};
+    // Check if the identifier is a keyword.
+    if (kKeywords.count(ident)) {
+        return {kKeywords.at(ident), ident};
     }
     return {TokenType::IDENTIFIER, ident};
 }
 
 Token Lexer::makeNumber() {
-    std::string num = "";
-    while (currentChar != '\0' && isdigit(currentChar)) {
-        num += currentChar;
+    std::string num;
+    while (current_char_ != 0 && isdigit(current_char_)) {
+        num += current_char_;
         advance();
     }
     return {TokenType::INTEGER_LITERAL, num};
 }
 
 Token Lexer::nextToken() {
-    while (currentChar != '\0') {
-        if (isspace(currentChar)) {
+    while (current_char_ != 0) {
+        if (isspace(current_char_)) {
             skipWhitespace();
             continue;
         }
-        if (isalpha(currentChar) || currentChar == '_') {
+        if (isalpha(current_char_) || current_char_ == '_') {
             return makeIdentifier();
         }
-        if (isdigit(currentChar)) {
+        if (isdigit(current_char_)) {
             return makeNumber();
         }
 
-        switch (currentChar) {
-            case '=': advance(); return {TokenType::ASSIGN, "="};
-            case ';': advance(); return {TokenType::SEMICOLON, ";"};
-            case '(': advance(); return {TokenType::LPAREN, "("};
-            case ')': advance(); return {TokenType::RPAREN, ")"};
-            case '{': advance(); return {TokenType::LBRACE, "{"};
-            case '}': advance(); return {TokenType::RBRACE, "}"};
-            case '+': advance(); return {TokenType::PLUS, "+"};
-            case '-': advance(); return {TokenType::MINUS, "-"};
-            case '*': advance(); return {TokenType::ASTERISK, "*"};
-            case '/': advance(); return {TokenType::SLASH, "/"};
+        switch (current_char_) {
+        case '=':
+            if (peekChar() == '=') {
+                advance();
+                advance();
+                return {TokenType::EQUALS, "=="};
+            }
+            advance();
+            return {TokenType::ASSIGN, "="};
+        case ';':
+            advance();
+            return {TokenType::SEMICOLON, ";"};
+        case '(':
+            advance();
+            return {TokenType::LPAREN, "("};
+        case ')':
+            advance();
+            return {TokenType::RPAREN, ")"};
+        case '{':
+            advance();
+            return {TokenType::LBRACE, "{"};
+        case '}':
+            advance();
+            return {TokenType::RBRACE, "}"};
+        case '+':
+            advance();
+            return {TokenType::PLUS, "+"};
+        case '-':
+            advance();
+            return {TokenType::MINUS, "-"};
+        case '*':
+            advance();
+            return {TokenType::ASTERISK, "*"};
+        case '/':
+            advance();
+            return {TokenType::SLASH, "/"};
+        case '<':
+            advance();
+            return {TokenType::LT, "<"};
+        case '>':
+            advance();
+            return {TokenType::GT, ">"};
+        case '!':
+            if (peekChar() == '=') {
+                advance();
+                advance();
+                return {TokenType::NOT_EQUALS, "!="};
+            }
+            break; // Single '!' for logical NOT operator can be added later.
         }
-        
-        // If the character is unknown, return an ILLEGAL token
-        Token illegalToken = {TokenType::ILLEGAL, std::string(1, currentChar)};
+
+        // If the character is unknown, return an ILLEGAL token.
+        Token illegal_token = {TokenType::ILLEGAL, std::string(1, current_char_)};
         advance();
-        return illegalToken;
+        return illegal_token;
     }
     return {TokenType::END_OF_FILE, ""};
 }
+
+} // namespace suplang

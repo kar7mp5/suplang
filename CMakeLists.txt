@@ -10,5 +10,5 @@ set(SOURCES
 )
 
 add_executable(suplang ${SOURCES})
-target_include_directories(suplang PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+target_include_directories(suplang PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

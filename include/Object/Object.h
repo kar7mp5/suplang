@@ -1,23 +1,39 @@
-#pragma once
-#include <string>
-#include <cstdint>
+#ifndef SUPLANG_OBJECT_OBJECT_H_
+#define SUPLANG_OBJECT_OBJECT_H_
 
-// Enum for all possible object types in the language
+#include <cstdint>
+#include <string>
+
+namespace suplang {
+
+// Enum for all possible object types in the language's runtime.
 enum class ObjectType {
     INTEGER,
-    // Add BOOL, FLOAT, STRING etc. later
+    BOOLEAN,
+    // Add FLOAT, STRING etc. later.
 };
 
-// Base class for all objects
+// Base class for all runtime objects, enabling polymorphism.
 class Object {
-public:
+  public:
     ObjectType type;
     virtual ~Object() = default;
 };
 
-// Represents an integer object
+// Represents an integer object at runtime.
 class IntegerObject : public Object {
-public:
+  public:
+    explicit IntegerObject(int32_t val) : value(val) { type = ObjectType::INTEGER; }
     int32_t value;
-    IntegerObject(int32_t val) : value(val) { type = ObjectType::INTEGER; }
 };
+
+// Represents a boolean object at runtime.
+class BooleanObject : public Object {
+  public:
+    explicit BooleanObject(bool val) : value(val) { type = ObjectType::BOOLEAN; }
+    bool value;
+};
+
+} // namespace suplang
+
+#endif // SUPLANG_OBJECT_OBJECT_H_
