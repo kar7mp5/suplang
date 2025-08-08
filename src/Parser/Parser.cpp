@@ -5,108 +5,124 @@
 namespace suplang {
 
 Parser::Parser(Lexer &lexer) : lexer_(lexer) {
-    // Sets up the precedence table for infix operators. A higher value
-    // indicates higher precedence.
+    // Sets up the precedence table for infix operators.
     precedences_ = {
         {TokenType::ASSIGN, Precedence::EQUALS},     {TokenType::EQUALS, Precedence::EQUALS},
         {TokenType::NOT_EQUALS, Precedence::EQUALS}, {TokenType::LT, Precedence::LESSGREATER},
         {TokenType::GT, Precedence::LESSGREATER},    {TokenType::PLUS, Precedence::SUM},
         {TokenType::MINUS, Precedence::SUM},         {TokenType::SLASH, Precedence::PRODUCT},
-        {TokenType::ASTERISK, Precedence::PRODUCT},
+        {TokenType::ASTERISK, Precedence::PRODUCT},  {TokenType::LPAREN, Precedence::CALL},
     };
 
-    // Initializes the parser by reading the first two tokens, so that both
-    // current_token_ and peek_token_ are populated.
+    // Initializes the parser by reading the first two tokens.
     nextToken();
     nextToken();
 }
 
+// Consumes the current token and advances the lexer to the next one.
 void Parser::nextToken() {
     current_token_ = peek_token_;
     peek_token_ = lexer_.nextToken();
 }
 
+// Asserts the type of the next token and advances if it matches.
+bool Parser::expectPeek(TokenType type) {
+    if (peek_token_.type == type) {
+        nextToken();
+        return true;
+    }
+    std::cerr << "Parser Error: Expected next token to be of type " << static_cast<int>(type) << ", got "
+              << static_cast<int>(peek_token_.type) << " instead.\n";
+    return false;
+}
+
 std::unique_ptr<ProgramNode> Parser::parseProgram() {
     auto program = std::make_unique<ProgramNode>();
-    // Continue parsing statements until the end of the file is reached.
     while (current_token_.type != TokenType::END_OF_FILE) {
         auto stmt = parseStatement();
         if (stmt) {
             program->statements.push_back(std::move(stmt));
         }
-        // Advance to the next token to start parsing the next statement.
         nextToken();
     }
     return program;
 }
 
-// Private helper methods for parsing different language constructs.
-
 std::unique_ptr<StatementNode> Parser::parseStatement() {
     switch (current_token_.type) {
     case TokenType::INT32:
-    case TokenType::FLOAT:
     case TokenType::BOOL:
-    case TokenType::CHAR:
-    case TokenType::LIST:
         return parseVarDeclStatement();
     case TokenType::IF:
         return parseIfStatement();
+    case TokenType::WHILE:
+        return parseWhileStatement();
+    case TokenType::RETURN:
+        return parseReturnStatement();
     default:
-        // If the statement does not start with a recognized keyword, it is
-        // parsed as an expression statement (e.g., an assignment).
         return parseExpressionStatement();
     }
 }
 
+std::unique_ptr<StatementNode> Parser::parseWhileStatement() {
+    if (!expectPeek(TokenType::LPAREN))
+        return nullptr;
+    nextToken();
+    auto condition = parseExpression(Precedence::LOWEST);
+    if (!expectPeek(TokenType::RPAREN))
+        return nullptr;
+    if (!expectPeek(TokenType::LBRACE))
+        return nullptr;
+    auto body = parseBlockStatement();
+    return std::make_unique<WhileStatementNode>(std::move(condition), std::move(body));
+}
+
 std::unique_ptr<StatementNode> Parser::parseExpressionStatement() {
-    // The entire line is parsed as a single expression.
     auto expr = parseExpression(Precedence::LOWEST);
     auto stmt = std::make_unique<ExpressionStatementNode>(std::move(expr));
-
-    // Optionally consume a semicolon at the end of the statement.
     if (peek_token_.type == TokenType::SEMICOLON) {
         nextToken();
     }
     return stmt;
 }
 
+std::unique_ptr<StatementNode> Parser::parseReturnStatement() {
+    nextToken();
+    auto return_value = parseExpression(Precedence::LOWEST);
+    if (peek_token_.type == TokenType::SEMICOLON) {
+        nextToken();
+    }
+    return std::make_unique<ReturnStatementNode>(std::move(return_value));
+}
+
 std::unique_ptr<StatementNode> Parser::parseVarDeclStatement() {
     std::string type = current_token_.value;
     if (!expectPeek(TokenType::IDENTIFIER))
         return nullptr;
-
     std::string name = current_token_.value;
     if (!expectPeek(TokenType::ASSIGN))
         return nullptr;
-
-    nextToken(); // Move past '=' to the start of the expression.
+    nextToken();
     auto value = parseExpression(Precedence::LOWEST);
-
     if (peek_token_.type == TokenType::SEMICOLON) {
         nextToken();
     }
-
     return std::make_unique<VarDeclNode>(type, name, std::move(value));
 }
 
 std::unique_ptr<StatementNode> Parser::parseIfStatement() {
     if (!expectPeek(TokenType::LPAREN))
         return nullptr;
-    nextToken(); // Move past '('.
+    nextToken();
     auto condition = parseExpression(Precedence::LOWEST);
     if (!expectPeek(TokenType::RPAREN))
         return nullptr;
     if (!expectPeek(TokenType::LBRACE))
         return nullptr;
-
     auto consequence = parseBlockStatement();
-
     std::unique_ptr<StatementNode> alternative = nullptr;
-    // Check for an 'elif' or 'else' branch.
     if (peek_token_.type == TokenType::ELIF) {
         nextToken();
-        // An 'elif' is parsed recursively as another 'if' statement.
         alternative = parseIfStatement();
     } else if (peek_token_.type == TokenType::ELSE) {
         nextToken();
@@ -114,14 +130,12 @@ std::unique_ptr<StatementNode> Parser::parseIfStatement() {
             return nullptr;
         alternative = parseBlockStatement();
     }
-
     return std::make_unique<IfStatementNode>(std::move(condition), std::move(consequence), std::move(alternative));
 }
 
 std::unique_ptr<BlockStatementNode> Parser::parseBlockStatement() {
     auto block = std::make_unique<BlockStatementNode>();
-    nextToken(); // Move past '{'.
-
+    nextToken();
     while (current_token_.type != TokenType::RBRACE && current_token_.type != TokenType::END_OF_FILE) {
         auto stmt = parseStatement();
         if (stmt) {
@@ -133,7 +147,6 @@ std::unique_ptr<BlockStatementNode> Parser::parseBlockStatement() {
 }
 
 std::unique_ptr<ExpressionNode> Parser::parseExpression(Precedence precedence) {
-    // The first token of an expression determines its prefix parsing function.
     std::unique_ptr<ExpressionNode> left_exp;
     switch (current_token_.type) {
     case TokenType::IDENTIFIER:
@@ -149,22 +162,88 @@ std::unique_ptr<ExpressionNode> Parser::parseExpression(Precedence precedence) {
     case TokenType::MINUS:
         left_exp = parsePrefixExpression();
         break;
+    case TokenType::DEF:
+        left_exp = parseFunctionLiteral();
+        break;
     default:
-        // If no prefix parsing function is found, there is a syntax error.
         return nullptr;
     }
 
-    // After parsing the prefix, look for infix operators as long as their
-    // precedence is higher than the current precedence level.
     while (peek_token_.type != TokenType::SEMICOLON &&
-           precedence < (precedences_.count(peek_token_.type) ? precedences_[peek_token_.type] : Precedence::LOWEST)) {
-        if (!precedences_.count(peek_token_.type)) {
+           precedence <
+               (precedences_.count(peek_token_.type) ? precedences_.at(peek_token_.type) : Precedence::LOWEST)) {
+        if (peek_token_.type == TokenType::LPAREN) {
+            nextToken();
+            left_exp = parseCallExpression(std::move(left_exp));
+        } else if (precedences_.count(peek_token_.type)) {
+            nextToken();
+            left_exp = parseInfixExpression(std::move(left_exp));
+        } else {
             return left_exp;
         }
-        nextToken();
-        left_exp = parseInfixExpression(std::move(left_exp));
     }
     return left_exp;
+}
+
+std::unique_ptr<ExpressionNode> Parser::parseFunctionLiteral() {
+    if (!expectPeek(TokenType::IDENTIFIER))
+        return nullptr;
+    if (!expectPeek(TokenType::LPAREN))
+        return nullptr;
+    auto params = parseFunctionParameters();
+    if (!expectPeek(TokenType::LBRACE))
+        return nullptr;
+    auto body = parseBlockStatement();
+    return std::make_unique<FunctionLiteralNode>(std::move(params), std::move(body));
+}
+
+std::vector<Parameter> Parser::parseFunctionParameters() {
+    std::vector<Parameter> params;
+    if (peek_token_.type == TokenType::RPAREN) {
+        nextToken();
+        return params;
+    }
+    nextToken();
+    Parameter p = {current_token_.value, ""};
+    if (!expectPeek(TokenType::IDENTIFIER))
+        return {};
+    p.param_name = current_token_.value;
+    params.push_back(p);
+    while (peek_token_.type == TokenType::COMMA) {
+        nextToken();
+        nextToken();
+        Parameter p2 = {current_token_.value, ""};
+        if (!expectPeek(TokenType::IDENTIFIER))
+            return {};
+        p2.param_name = current_token_.value;
+        params.push_back(p2);
+    }
+    if (!expectPeek(TokenType::RPAREN))
+        return {};
+    return params;
+}
+
+std::unique_ptr<ExpressionNode> Parser::parseCallExpression(std::unique_ptr<ExpressionNode> function) {
+    auto args = parseCallArguments();
+    return std::make_unique<CallExpressionNode>(std::move(function), std::move(args));
+}
+
+std::vector<std::unique_ptr<ExpressionNode>> Parser::parseCallArguments() {
+    std::vector<std::unique_ptr<ExpressionNode>> args;
+    if (peek_token_.type == TokenType::RPAREN) {
+        nextToken();
+        return args;
+    }
+    nextToken();
+    args.push_back(parseExpression(Precedence::LOWEST));
+    while (peek_token_.type == TokenType::COMMA) {
+        nextToken();
+        nextToken();
+        args.push_back(parseExpression(Precedence::LOWEST));
+    }
+    if (!expectPeek(TokenType::RPAREN))
+        return {};
+    return args;
 }
 
 std::unique_ptr<ExpressionNode> Parser::parseIdentifier() {
@@ -193,16 +272,6 @@ std::unique_ptr<ExpressionNode> Parser::parseInfixExpression(std::unique_ptr<Exp
     nextToken();
     auto right = parseExpression(current_precedence);
     return std::make_unique<InfixExpressionNode>(std::move(left), op, std::move(right));
-}
-
-bool Parser::expectPeek(TokenType type) {
-    if (peek_token_.type == type) {
-        nextToken();
-        return true;
-    }
-    std::cerr << "Parser Error: Expected next token to be of type " << static_cast<int>(type) << ", got "
-              << static_cast<int>(peek_token_.type) << " instead.\n";
-    return false;
 }
 
 } // namespace suplang

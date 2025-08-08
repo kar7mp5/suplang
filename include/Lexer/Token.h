@@ -1,67 +1,63 @@
-#pragma once
-#include <string>
-#include <vector>
+#ifndef SUPLANG_LEXER_TOKEN_H_
+#define SUPLANG_LEXER_TOKEN_H_
 
-// Enum class representing all possible token types
+#include <string>
+
+namespace suplang {
+
+// Represents the type of a token that the Lexer can produce.
 enum class TokenType {
     // Keywords
-    DEF,
     CLASS,
     STRUCT,
+    IF,
+    ELIF,
+    ELSE,
     RETURN,
     INT32,
     FLOAT,
     BOOL,
     CHAR,
     LIST,
-
-    // New keywords for control flow and boolean values
-    IF,
-    ELIF,
-    ELSE,
     TRUE,
     FALSE,
+    DEF,
+    WHILE, // New keyword for while loops.
 
-    // Identifiers and Literals
+    // Identifiers & Literals
     IDENTIFIER,
     INTEGER_LITERAL,
-    STRING_LITERAL,
 
     // Operators
+    ASSIGN,
     PLUS,
     MINUS,
     ASTERISK,
     SLASH,
-    PERCENT,
-    ASSIGN,
-    INCREMENT,
-    DECREMENT,
-
-    // New comparison operators
     EQUALS,
-    NOT_EQUALS, // ==, !=
+    NOT_EQUALS,
     LT,
-    GT, // <, >
+    GT,
 
     // Delimiters
     LPAREN,
-    RPAREN, // ( )
+    RPAREN,
     LBRACE,
-    RBRACE, // { }
-    LBRACKET,
-    RBRACKET, // [ ]
+    RBRACE,
     SEMICOLON,
-    COLON,
-    DOT,
     COMMA,
 
     // Other
-    ILLEGAL, // Represents an unknown token
-    END_OF_FILE
+    ILLEGAL,
+    END_OF_FILE,
 };
 
-// Represents a single token with its type and string value
+// Represents a single token.
 struct Token {
     TokenType type;
     std::string value;
 };
+
+} // namespace suplang
+
+#endif // SUPLANG_LEXER_TOKEN_H_

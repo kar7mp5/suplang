@@ -5,6 +5,7 @@
 #include "Lexer/Lexer.h"
 
 #include <map>
+#include <vector>
 
 namespace suplang {
 
@@ -16,38 +17,38 @@ enum Precedence {
     SUM,         // +
     PRODUCT,     // *
     PREFIX,      // -X or !X
+    CALL,        // myFunction(X)
 };
 
-// The Parser class creates an Abstract Syntax Tree (AST) from a stream of
-// tokens provided by the Lexer.
 class Parser {
   public:
     explicit Parser(Lexer &lexer);
-
-    // The main entry point for parsing, returns the root of the AST.
     std::unique_ptr<ProgramNode> parseProgram();
 
   private:
-    // Consumes the current token and advances to the next one.
     void nextToken();
-
-    // Asserts the type of the next token and advances if it matches.
     bool expectPeek(TokenType type);
 
-    // --- Statement Parsers ---
+    // Statement parsers.
     std::unique_ptr<StatementNode> parseStatement();
     std::unique_ptr<StatementNode> parseVarDeclStatement();
     std::unique_ptr<StatementNode> parseIfStatement();
+    std::unique_ptr<StatementNode> parseWhileStatement(); // New parser method.
     std::unique_ptr<BlockStatementNode> parseBlockStatement();
     std::unique_ptr<StatementNode> parseExpressionStatement();
+    std::unique_ptr<StatementNode> parseReturnStatement();
 
-    // --- Expression Parsers (Pratt Parser Implementation) ---
+    // Expression parsers.
     std::unique_ptr<ExpressionNode> parseExpression(Precedence precedence);
     std::unique_ptr<ExpressionNode> parseIdentifier();
     std::unique_ptr<ExpressionNode> parseIntegerLiteral();
     std::unique_ptr<ExpressionNode> parseBoolean();
     std::unique_ptr<ExpressionNode> parsePrefixExpression();
     std::unique_ptr<ExpressionNode> parseInfixExpression(std::unique_ptr<ExpressionNode> left);
+    std::unique_ptr<ExpressionNode> parseFunctionLiteral();
+    std::vector<Parameter> parseFunctionParameters();
+    std::unique_ptr<ExpressionNode> parseCallExpression(std::unique_ptr<ExpressionNode> function);
+    std::vector<std::unique_ptr<ExpressionNode>> parseCallArguments();
 
     Lexer &lexer_;
     Token current_token_;

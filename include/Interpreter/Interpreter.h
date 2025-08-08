@@ -5,24 +5,36 @@
 #include "Interpreter/Environment.h"
 
 #include <memory>
+#include <vector>
 
 namespace suplang {
 
-// The Interpreter class traverses the Abstract Syntax Tree (AST) and
-// evaluates it, producing a result.
+// Forward declarations to break include cycles. The full definitions will be
+// included in the corresponding .cpp file.
+class Object;
+class FunctionObject;
+
+// The Interpreter class traverses the AST and evaluates it.
 class Interpreter {
   public:
-    // The main dispatch function for evaluation. It takes an AST node and an
-    // environment and returns the evaluated object.
     std::shared_ptr<Object> eval(ASTNode *node, std::shared_ptr<Environment> env);
 
   private:
+    // Methods for evaluating specific AST node types.
     std::shared_ptr<Object> evalProgram(ProgramNode *node, std::shared_ptr<Environment> env);
     std::shared_ptr<Object> evalBlockStatement(BlockStatementNode *node, std::shared_ptr<Environment> env);
     std::shared_ptr<Object> evalVarDecl(VarDeclNode *node, std::shared_ptr<Environment> env);
     std::shared_ptr<Object> evalIfStatement(IfStatementNode *node, std::shared_ptr<Environment> env);
-    std::shared_ptr<Object> evalInfixExpression(InfixExpressionNode *node, std::shared_ptr<Environment> env);
+    std::shared_ptr<Object> evalWhileStatement(WhileStatementNode *node, std::shared_ptr<Environment> env);
     std::shared_ptr<Object> evalPrefixExpression(PrefixExpressionNode *node, std::shared_ptr<Environment> env);
+    std::shared_ptr<Object> evalReturnStatement(ReturnStatementNode *node, std::shared_ptr<Environment> env);
+    std::shared_ptr<Object> evalInfixExpression(InfixExpressionNode *node, std::shared_ptr<Environment> env);
+
+    // Helper for applying a function.
+    std::shared_ptr<Object> applyFunction(std::shared_ptr<Object> fn, const std::vector<std::shared_ptr<Object>> &args);
+    // Helper for creating a function's local environment.
+    std::shared_ptr<Environment> extendFunctionEnv(FunctionObject *fn,
+                                                   const std::vector<std::shared_ptr<Object>> &args);
 };
 
 } // namespace suplang

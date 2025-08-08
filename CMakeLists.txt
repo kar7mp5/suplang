@@ -5,6 +5,7 @@ set(SOURCES
     src/main.cpp
     src/Lexer/Lexer.cpp
     src/Parser/Parser.cpp
+    src/Object/Object.cpp
     src/Interpreter/Environment.cpp
     src/Interpreter/Interpreter.cpp
 )
