@@ -8,7 +8,7 @@ set(SOURCES
 )
 
 # 실행 파일 생성
-add_executable(sublang ${SOURCES})
+add_executable(suplang ${SOURCES})
 # 헤더 파일 경로 설정
-target_include_directories(sublang PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(suplang PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
